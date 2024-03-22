@@ -1,3 +1,7 @@
+*
+!/**/
+!*.*
+
 # Prerequisites
 *.d
 
@@ -53,10 +57,3 @@ dkms.conf
 
 # VS Code Folder Settings
 .vscode
-
-*.*
-!*.c
-!*.h
-!*.in
-!*.txt
-!*.ps
