@@ -13,4 +13,7 @@ void print_separator( void );
 /* Scambia il contenuto di due variabili */
 void swap( int *a, int *b );
 
+/* Genera un numero random compreso tra 'lower' e 'upper'  */
+int rnd_number( int lower, int upper );
+
 #endif

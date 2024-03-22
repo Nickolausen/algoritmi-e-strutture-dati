@@ -24,7 +24,7 @@ void create_random_vector( int **out_vect, int size, int lower, int upper )
     }
 
     for (int i = 0; i < size; i++) {
-        (*out_vect)[i] = (rand() % upper - lower + 1) + lower;
+        (*out_vect)[i] = rnd_number(lower, upper);
     }
 }
 
@@ -33,9 +33,14 @@ void print_separator( void )
     puts("\n======================\n");
 }
 
-void swap(int *a, int *b) 
+void swap( int *a, int *b ) 
 {
     int temp = *a;
     *a = *b;
     *b = temp;
+}
+
+int rnd_number( int lower, int upper ) 
+{
+    return (rand() % (upper - lower + 1)) + lower;
 }
