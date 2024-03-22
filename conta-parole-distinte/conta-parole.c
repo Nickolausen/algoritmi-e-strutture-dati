@@ -220,13 +220,32 @@ char`, perché in caso di fine file, la funzione `fetc()` restituisce
    del file. */
 int read_word(FILE *f, char *s)
 {
-    /* [TODO] */
-    s[0] = '\0';
-    return 0;
+    assert(f != NULL);
+    int c;
+    int charcount = 0, idx_char = 0;
+
+    do
+    {
+      c = tolower(fgetc(f));
+      charcount++;
+      if (c == EOF)
+        return 0;
+      
+      if (isalpha(c))
+        s[idx_char++] = c;
+
+    } while (isalpha(c));
+
+    s[idx_char] = '\0';
+    
+    return charcount;    
 }
 
 int main( int argc, char *argv[] )
 {
+    const int size = 50000;
+    HashTable* words = ht_create(size);
+    
     FILE *filein = stdin;
     char w[WORDLEN]; /* buffer per lettura delle parole */
 
@@ -248,9 +267,13 @@ int main( int argc, char *argv[] )
        dal file. Lo si modifichi per inserire le parole lette in una
        tabella hash e al termine stampare il numero di elementi della
        tabella chiamando la funzione `ht_round()`. */
-    while (read_word(filein, w)) {
-        printf("%s\n", w);
+
+    while (read_word(filein, w)) 
+    {
+      if (w[0] != '\0')
+        ht_insert(words, w, 0);
     }
+    printf("%d", ht_count(words));
     if (filein != stdin) fclose(filein);
 
     return EXIT_SUCCESS;
