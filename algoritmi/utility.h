@@ -1,6 +1,19 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+/* Struct per contenere una matrice di interi */
+typedef struct IntMatrix {
+    int rows;
+    int cols;
+    int **values;
+} IntMatrix;
+
+/* Inizializza una matrice di interi con valori random compresi tra 'lower' e 'upper' */
+void init_matrix( IntMatrix *matrix, int lower, int upper );
+
+/* Stampa il contenuto di una matrice */
+void print_matrix( IntMatrix *matrix ); 
+
 /* Stampa il contenuto di un vettore */
 void print_vector( int *vector, int size );
 

@@ -1,42 +1,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 #include "utility.h"
 
-static int cols = 10;
-static int rows = 10;
-
-void init_matrix(int matrix[rows][cols], int lower, int upper) 
+IntMatrix *iterative_multiplication(IntMatrix *A, IntMatrix *B) 
 {
-    srand(time(NULL));
+    IntMatrix *result = (IntMatrix *)malloc(sizeof(IntMatrix));
+    assert(result != NULL);
 
-    for (int row = 0; row < rows; row++) 
+    result->rows = B->cols;
+    result->cols = A->rows;
+
+    int **result_vals = (int **)malloc(sizeof(int *) * B->cols);
+    assert(result_vals != NULL);
+
+    for (int row = 0; row < result->rows; row++) 
     {
-        for (int col = 0; col < cols; col++) 
+        result_vals[row] = (int *)malloc(sizeof(int) * A->rows);
+        assert(result_vals[row] != NULL);
+
+        for (int col = 0; col < result->cols; col++) 
         {
-            matrix[row][col] = rnd_number(lower, upper);
+            result_vals[row][col] = 0;
+            for (int k = 0; k < A->cols; k++) 
+            {
+                result_vals[row][col] += A->values[row][k] * B->values[k][col];
+            }
         }
     }
+
+    result->values = result_vals;
+
+    return result;
 }
 
-void print_matrix(int matrix[rows][cols]) 
+IntMatrix *recursive_multiplication(IntMatrix *A, IntMatrix *B) 
 {
-    for (int row = 0; row < rows; row++) 
-    {
-        printf("[");
-        for (int col = 0; col < cols - 1; col++) 
-        {
-            printf("%4d,", matrix[row][col]);
-        }
-        printf("%4d  ]\n", matrix[row][cols - 1]);
-    }
+    /* to implement */
 }
 
 int main( void ) 
 {
-    int matrix[rows][cols];
-    init_matrix(matrix, 0, 100);
-    print_matrix(matrix);
+    srand(time(NULL));
+
+    IntMatrix A = { 2, 2, NULL };
+    init_matrix(&A, 0, 10);
+    
+    printf("A:\n");
+    print_matrix(&A);
+
+    IntMatrix B = { 2, 2, NULL };
+    init_matrix(&B, 0, 10);
+    
+    printf("\nB:\n");
+    print_matrix(&B);
+    
+    print_separator();
+    printf("Iterative multiplication: \n");
+    print_matrix(iterative_multiplication(&A, &B));
 
     return EXIT_SUCCESS;
 }
