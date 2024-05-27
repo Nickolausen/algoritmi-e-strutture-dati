@@ -1,25 +1,27 @@
 /*
- * > Author: Nicholas Magi, 0001113915, classe A, <nicholas.magi@studio.unibo.it>
+ * > Author: Nicholas Magi, matricola 0001113915, classe A, <nicholas.magi@studio.unibo.it>
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <math.h>
 #include <float.h>
 
-typedef struct Coordinates {
+typedef struct Coordinates
+{
     int row;
     int col;
 } Coordinates;
 
-typedef struct Edge {
+typedef struct Edge
+{
     long src;
     long dst;
     double weight;
     struct Edge *next;
 } Edge;
 
-typedef struct Node {
+typedef struct Node
+{
     int id;
     long height;
     double cost_from_src;
@@ -31,25 +33,33 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-typedef struct Graph {
+typedef struct Graph
+{
     int nr_nodes;
     Node *nodes;
 } Graph;
 
-
-typedef struct HeapElem {
+typedef struct HeapElem
+{
     int key;
     double prio;
 } HeapElem;
 
-typedef struct {
+typedef struct
+{
     HeapElem *heap;
-    int *pos; 
-    int n; /* quante coppie (chiave, prio) sono effettivamente presenti nello heap */
+    int *pos;
+    int n;    /* quante coppie (chiave, prio) sono effettivamente presenti nello heap */
     int size; /* massimo numero di coppie (chiave, prio) che possono essere contenuti nello heap */
 } MinHeap;
 
-typedef enum Direction { UP, RIGHT, DOWN, LEFT } Direction;
+typedef enum Direction
+{
+    UP,
+    RIGHT,
+    DOWN,
+    LEFT
+} Direction;
 
 void minheap_print(const MinHeap *h)
 {
@@ -61,9 +71,11 @@ void minheap_print(const MinHeap *h)
     printf("n=%d size=%d\n", h->n, h->size);
     printf("Contenuto dell'array heap[] (stampato a livelli):\n");
     i = 0;
-    while (i < h->n) {
+    while (i < h->n)
+    {
         j = 0;
-        while (j<width && i < h->n) {
+        while (j < width && i < h->n)
+        {
             printf("h[%2d]=(%2d, %6.2f) ", i, h->heap[i].key, h->heap[i].prio);
             i++;
             j++;
@@ -72,17 +84,19 @@ void minheap_print(const MinHeap *h)
         width *= 2;
     }
     printf("\nContenuto dell'array pos[]:\n");
-    for (i=0; i<h->size; i++) {
+    for (i = 0; i < h->size; i++)
+    {
         printf("pos[%d]=%d ", i, h->pos[i]);
     }
     printf("\n\n** Fine contenuto dello heap\n\n");
 }
 
-void minheap_clear( MinHeap *h )
+void minheap_clear(MinHeap *h)
 {
     int i;
     assert(h != NULL);
-    for (i=0; i<h->size; i++) {
+    for (i = 0; i < h->size; i++)
+    {
         h->pos[i] = -1;
     }
     h->n = 0;
@@ -92,20 +106,20 @@ void minheap_clear( MinHeap *h )
    `size` elementi */
 MinHeap *minheap_create(int size)
 {
-    MinHeap *h = (MinHeap*)malloc(sizeof(*h));
+    MinHeap *h = (MinHeap *)malloc(sizeof(*h));
     assert(h != NULL);
     assert(size > 0);
 
     h->size = size;
-    h->heap = (HeapElem*)malloc(size * sizeof(*(h->heap)));
+    h->heap = (HeapElem *)malloc(size * sizeof(*(h->heap)));
     assert(h->heap != NULL);
-    h->pos = (int*)malloc(size * sizeof(*(h->pos)));
+    h->pos = (int *)malloc(size * sizeof(*(h->pos)));
     assert(h->pos != NULL);
     minheap_clear(h);
     return h;
 }
 
-void minheap_destroy( MinHeap *h )
+void minheap_destroy(MinHeap *h)
 {
     assert(h != NULL);
 
@@ -149,7 +163,7 @@ static int parent(const MinHeap *h, int i)
 {
     assert(valid(h, i));
 
-    return (i+1)/2 - 1;
+    return (i + 1) / 2 - 1;
 }
 
 /* Funzione di supporto: restituisce l'indice del figlio sinistro del
@@ -159,7 +173,7 @@ static int lchild(const MinHeap *h, int i)
 {
     assert(valid(h, i));
 
-    return 2*i + 1;
+    return 2 * i + 1;
 }
 
 /* Funzione di supporto: restituisce l'indice del figlio destro del
@@ -169,7 +183,7 @@ static int rchild(const MinHeap *h, int i)
 {
     assert(valid(h, i));
 
-    return 2*i + 2;
+    return 2 * i + 2;
 }
 
 /* Funzione di supporto: restituisce l'indice del figlio di `i` con
@@ -182,9 +196,11 @@ static int min_child(const MinHeap *h, int i)
 
     l = lchild(h, i);
     r = rchild(h, i);
-    if (valid(h, l)) {
+    if (valid(h, l))
+    {
         result = l;
-        if (valid(h, r) && (h->heap[r].prio < h->heap[l].prio)) {
+        if (valid(h, r) && (h->heap[r].prio < h->heap[l].prio))
+        {
             result = r;
         }
     }
@@ -200,7 +216,8 @@ static void move_up(MinHeap *h, int i)
     assert(valid(h, i));
 
     p = parent(h, i);
-    while ( valid(h, p) && (h->heap[i].prio < h->heap[p].prio) ) {
+    while (valid(h, p) && (h->heap[i].prio < h->heap[p].prio))
+    {
         swap(h, i, p);
         i = p;
         p = parent(h, i);
@@ -219,12 +236,16 @@ static void move_down(MinHeap *h, int i)
     /* L'operazione viene implementata iterativamente, sebbene sia
        possibile una implementazione ricorsiva probabilmente più
        leggibile. */
-    do {
+    do
+    {
         const int dst = min_child(h, i);
-        if (valid(h, dst) && (h->heap[dst].prio < h->heap[i].prio)) {
+        if (valid(h, dst) && (h->heap[dst].prio < h->heap[i].prio))
+        {
             swap(h, i, dst);
             i = dst;
-        } else {
+        }
+        else
+        {
             done = 1;
         }
     } while (!done);
@@ -258,7 +279,7 @@ int minheap_get_n(const MinHeap *h)
 /* Restituisce la chiave associata alla priorità minima */
 int minheap_min(const MinHeap *h)
 {
-    assert( !minheap_is_empty(h) );
+    assert(!minheap_is_empty(h));
 
     return h->heap[0].key;
 }
@@ -266,9 +287,9 @@ int minheap_min(const MinHeap *h)
 /* Come minheap_min(), ma restituisce la coppia (chiave, prio); questa
    funzione verrà utilizzata in future edizioni del corso al posto di
    minheap_min(). */
-HeapElem minheap_min2( const MinHeap *h)
+HeapElem minheap_min2(const MinHeap *h)
 {
-    assert( !minheap_is_empty(h) );
+    assert(!minheap_is_empty(h));
 
     return h->heap[0];
 }
@@ -278,7 +299,7 @@ void minheap_insert(MinHeap *h, int key, double prio)
 {
     int i;
 
-    assert( !minheap_is_full(h) );
+    assert(!minheap_is_full(h));
     assert((key >= 0) && (key < h->size));
     assert(h->pos[key] == -1);
 
@@ -295,34 +316,34 @@ int minheap_delete_min(MinHeap *h)
 {
     int result;
 
-    assert( !minheap_is_empty(h) );
+    assert(!minheap_is_empty(h));
 
     result = minheap_min(h);
-    swap(h, 0, h->n-1);
-    assert( h->heap[h->n - 1].key == result );
+    swap(h, 0, h->n - 1);
+    assert(h->heap[h->n - 1].key == result);
     h->pos[result] = -1;
     h->n--;
-    if (!minheap_is_empty(h)) {
+    if (!minheap_is_empty(h))
+    {
         move_down(h, 0);
     }
     return result;
 }
 
-/* Come minheap_delete_min(), ma restituisce la coppia (chiave, prio);
-   questa funzione verrà utilizzata al posto di minheap_delete_min()
-   in future edizioni del corso. */
+/* Come minheap_delete_min(), ma restituisce la coppia (chiave, prio); */
 HeapElem minheap_delete_min2(MinHeap *h)
 {
     HeapElem result;
 
-    assert( !minheap_is_empty(h) );
+    assert(!minheap_is_empty(h));
 
     result = minheap_min2(h);
-    swap(h, 0, h->n-1);
-    assert( h->heap[h->n - 1].key == result.key );
+    swap(h, 0, h->n - 1);
+    assert(h->heap[h->n - 1].key == result.key);
     h->pos[result.key] = -1;
     h->n--;
-    if (!minheap_is_empty(h)) {
+    if (!minheap_is_empty(h))
+    {
         move_down(h, 0);
     }
     return result;
@@ -338,46 +359,61 @@ void minheap_change_prio(MinHeap *h, int key, double newprio)
     assert(h != NULL);
     assert(key >= 0 && key < h->size);
     j = h->pos[key];
-    assert( valid(h, j) );
+    assert(valid(h, j));
     oldprio = h->heap[j].prio;
     h->heap[j].prio = newprio;
-    if (newprio > oldprio) {
+    if (newprio > oldprio)
+    {
         move_down(h, j);
-    } else {
+    }
+    else
+    {
         move_up(h, j);
     }
 }
 
-
 /*
- * Funzione di supporto 
- * Trasforma la coppia di coordinate ('row', 'col')
- * in un corrispondente indice unico
+ * Funzione di supporto che trasforma la coppia di coordinate ('row', 'col')
+ * in un corrispondente indice unico;
+ *
+ * `row`: riga della matrice;
+ * `col`: colonna della matrice;
+ * `max_cols`: numero di colonne della matrice.
  */
-static int to_vector_idx(int row, int col, int max_cols) 
+static int to_vector_idx(int row, int col, int max_cols)
 {
     return row * max_cols + col;
 }
 
 /*
- * Wrapper per ottenere un identificativo unico per una cella di una matrice
+ * Wrapper di funzione per ottenere un identificativo unico per una cella di una matrice.
+ *
+ * `position`: coordinate da trasformare in identificativo unico;
+ * `max_cols`: numero di colonne massimo - serve per i calcoli dell'identificativo univoco.
  */
 static int get_unique_id(Coordinates position, int max_cols)
 {
     return to_vector_idx(position.row, position.col, max_cols);
 }
 
-long **read_matrix_from_file(FILE *fin, int rows, int cols) 
+/*
+ * Lettura e costruzione di una matrice `rows` x `cols` a partire da un file.
+ *
+ * `fin`: file di input da cui leggere i dati;
+ * `rows`: numero di righe della matrice finale;
+ * `cols`: numero di colonne della matrice finale.
+ */
+long **read_matrix_from_file(FILE *fin, int rows, int cols)
 {
-    long **out_matrix; /* Output matrix */
+    long **out_matrix;    /* Output matrix */
     Coordinates position; /* Indici della matrice */
     assert(fin != NULL);
 
     out_matrix = (long **)malloc(sizeof(long **) * rows);
-    for (position.row = 0; position.row < rows; position.row++) 
+    for (position.row = 0; position.row < rows; position.row++)
     {
         out_matrix[position.row] = (long *)malloc(sizeof(long) * cols);
-        for (position.col = 0; position.col < cols; position.col++) 
+        for (position.col = 0; position.col < cols; position.col++)
         {
             fscanf(fin, "%ld", &out_matrix[position.row][position.col]);
         }
@@ -386,25 +422,62 @@ long **read_matrix_from_file(FILE *fin, int rows, int cols)
     return out_matrix;
 }
 
-void insert_node(Node **graph, Node *to_insert) 
+/*
+ * Funzione per liberare la memoria di una matrice precedentemente allocata.
+ *
+ * `matrix`: matrice da eliminare;
+ * `rows`: numero di righe della matrice da eliminare.
+ */
+void destroy_matrix(long **matrix, int rows)
+{
+    int row;
+    for (row = 0; row < rows; row++)
+    {
+        free(matrix[row]);
+    }
+
+    free(matrix);
+}
+
+/*
+ * Inserimento in testa di un nodo in una liked list di nodi.
+ *
+ * `nodes`: linked list su cui fare l'inserimento;
+ * `to_insert`: nodo da aggiungere alla lista.
+ */
+void insert_node(Node **nodes, Node *to_insert)
 {
     assert(to_insert != NULL);
 
-    to_insert->next = *graph;
-    *graph = to_insert;
+    to_insert->next = *nodes;
+    *nodes = to_insert;
 }
 
-void insert_edge(Node *nodo, Edge *to_insert, Direction idx) 
+/*
+ * Inserimento di un arco in un nodo nella direzione specificata.
+ *
+ * `nodo`: nodo su cui inserire l'arco;
+ * `to_insert`: arco da inserire;
+ * `idx`: direzione dell'arco: corrisponde all'indice del vettore che memorizza
+ * i quattro possibili archi associati ad un nodo (`UP = 0`, `RIGHT = 1`, `DOWN = 2`, `LEFT = 3`)
+ */
+void insert_edge(Node *nodo, Edge *to_insert, Direction idx)
 {
     assert(nodo != NULL);
     nodo->links[idx] = to_insert;
 }
 
-Node *find_node_by_id(Graph *graph, int id) 
+/*
+ * Funzione ausiliaria per ricercare un nodo all'interno di un grafo.
+ *
+ * `graph`: grafo su cui effettuare la ricerca;
+ * `id`: identificativo del nodo da ricercare sul grafo.
+ */
+Node *find_node_by_id(Graph *graph, int id)
 {
     Node *current_node;
 
-    for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next) 
+    for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next)
     {
         if (current_node->id == id)
             return current_node;
@@ -413,24 +486,48 @@ Node *find_node_by_id(Graph *graph, int id)
     return NULL;
 }
 
-int is_within_boundaries(Coordinates* position, int rows, int cols) 
+/*
+ * Funzione ausiliaria per il controllo della validità di un set di coordinate
+ * all'interno di una matrice.
+ *
+ * `position`: coordinate x (`col`) e y (`row`) del punto di cui si vuole accertare la correttezza della posizione;
+ * `rows`: numero di righe della matrice;
+ * `cols`: numero di colonne della matrice;
+ */
+int is_within_boundaries(Coordinates *position, int rows, int cols)
 {
-    return 
-        (position->row >= 0 && position->row < rows) &&
-        (position->col >= 0 && position->col < cols);
+    return (position->row >= 0 && position->row < rows) &&
+           (position->col >= 0 && position->col < cols);
 }
 
-double get_cost(long c_cell, long c_height, long current_cell, long neighbour)
+/*
+ * Funzione ausiliaria per calcolare il costo di ogni arco del grafo.
+ *
+ * `c_cell` e `c_height`: costanti prese in input;
+ * `current_cell`: altezza media sul livello del mare della cella su cui sto calcolando il costo;
+ * `neighbour`: altezza media sul livello del mare della cella adiacente a `current_cell`.
+ */
+double get_cost(double c_cell, double c_height, double current_cell, double neighbour)
 {
-    return c_cell + c_height * pow(current_cell - neighbour, 2);
+    double height_diff = (double)(current_cell - neighbour);
+    return c_cell + c_height * height_diff * height_diff;
 }
 
-Graph *build_graph(long **values, int rows, int cols, long c_cell, long c_height)
+/*
+ * Funzione che, a partire da una matrice `rows` x `cols`, costruisce un corrispettivo grafo di
+ * `rows` x `cols` nodi, restituendolo.
+ *
+ * `values`: matrice da cui vengono presi i valori per costruire il grafo di output;
+ * `rows`: numero di righe della matrice `values`;
+ * `cols`: numero di colonne della matrice `values`;
+ * `c_cell` e `c_height`: costanti prese in input per calcolare il costo di attraversamento di ogni arco.
+ */
+Graph *build_graph(long **values, int rows, int cols, double c_cell, double c_height)
 {
     int directions[4][2] = {
         {-1, 0}, /* UP */
-        {0, 1}, /* RIGHT */
-        {1, 0}, /* DOWN */
+        {0, 1},  /* RIGHT */
+        {1, 0},  /* DOWN */
         {0, -1}, /* LEFT */
     };
 
@@ -444,20 +541,21 @@ Graph *build_graph(long **values, int rows, int cols, long c_cell, long c_height
     Graph *out_graph = (Graph *)malloc(sizeof(Graph));
     assert(out_graph != NULL);
 
-    for (position.row = 0; position.row < rows; position.row++) 
+    for (position.row = 0; position.row < rows; position.row++)
     {
-        for (position.col = 0; position.col < cols; position.col++) 
+        for (position.col = 0; position.col < cols; position.col++)
         {
             new_node = (Node *)malloc(sizeof(Node));
             assert(new_node != NULL);
-            for (current_direction = UP; current_direction < 4; current_direction++) 
+            for (current_direction = UP; current_direction < 4; current_direction++)
             {
                 next_position.row = position.row + directions[current_direction][0];
                 next_position.col = position.col + directions[current_direction][1];
 
-                if (!is_within_boundaries(&next_position, rows, cols)) {
-                    insert_edge(new_node, NULL, current_direction); 
-                    continue; 
+                if (!is_within_boundaries(&next_position, rows, cols))
+                {
+                    insert_edge(new_node, NULL, current_direction);
+                    continue;
                 }
 
                 new_edge = (Edge *)malloc(sizeof(Edge));
@@ -467,9 +565,9 @@ Graph *build_graph(long **values, int rows, int cols, long c_cell, long c_height
                 new_edge->dst = get_unique_id(next_position, cols);
                 new_edge->weight = get_cost(c_cell, c_height, values[position.row][position.col], values[next_position.row][next_position.col]);
 
-                insert_edge(new_node, new_edge, current_direction); 
+                insert_edge(new_node, new_edge, current_direction);
             }
-            
+
             new_node->id = get_unique_id(position, cols);
             new_node->height = values[position.row][position.col];
             new_node->coords = position;
@@ -482,56 +580,48 @@ Graph *build_graph(long **values, int rows, int cols, long c_cell, long c_height
 
     out_graph->nodes = nodes;
     out_graph->nr_nodes = rows * cols;
-    
+
     return out_graph;
 }
 
-void print_graph(Graph* graph) 
+/*
+ * Funzione per liberare la memoria allocata per un grafo.
+ *
+ * `graph`: grafo da cancellare.
+ */
+void destroy_graph(Graph *graph)
 {
-    Node *current_node;
-    Direction idx_direction;
-    char *directions_string[] = {"UP", "RIGHT", "DOWN", "LEFT"};
+    Node *current_node = graph->nodes, *next_node = NULL;
+    Direction idx;
 
-    for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next) 
+    while (current_node != NULL)
     {
-        printf("Nodo [%d] --- %d mt s.l.m.\n", current_node->id, current_node->height);
-        printf("# Parent: [%d]\n", current_node->parent->id);
+        next_node = current_node->next;
 
-        for (idx_direction = UP; idx_direction < 4; idx_direction++) 
+        for (idx = UP; idx < 4; idx++)
         {
-            if (current_node->links[idx_direction] == NULL)
-                printf("\t%s: NULL", directions_string[idx_direction]);
-            else
-                printf("\t%s: %d - weight = %.2f;", directions_string[idx_direction], current_node->links[idx_direction]->dst, current_node->links[idx_direction]->weight);
-            
-            puts("");
-        }
-        puts("");        
-    }
-}
-
-void print_matrix(long **matrix, int rows, int cols) 
-{
-    Coordinates position; /* Indici della matrice */
-
-    assert(matrix != NULL);
-    for (position.row = 0; position.row < rows; position.row++) 
-    {
-        assert(matrix[position.row] != NULL);
-        for (position.col = 0; position.col < cols; position.col++) 
-        {
-            printf("%ld ", matrix[position.row][position.col]);
+            free(current_node->links[idx]);
         }
 
-        puts("");
+        free(current_node);
+        current_node = next_node;
     }
+
+    free(graph);
 }
 
-void fill_queue(MinHeap *queue, Graph *graph, long c_cell) 
+/*
+ * Riempie una priority queue `queue` costruita su `MinHeap`.
+ *
+ * `queue`: coda da inizializzare;
+ * `graph`: sorgente dei nodi da inserire nella priority queue;
+ * `c_cell`: parametro letto in input che assegna un costo fisso iniziale al nodo sorgente.
+ */
+void fill_queue(MinHeap *queue, Graph *graph, double c_cell)
 {
     Node *current_node;
 
-    for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next) 
+    for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next)
     {
         if (current_node->id == 0) /* se ci troviamo sulla sorgente, il costo sarà c_cell */
             minheap_insert(queue, current_node->id, c_cell);
@@ -540,11 +630,18 @@ void fill_queue(MinHeap *queue, Graph *graph, long c_cell)
     }
 }
 
-double relax(HeapElem *src, HeapElem *dst, Edge *link) 
+/*
+ * Funzione di 'rilassamento' degli archi utilizzata dall'Algoritmo di Dijkstra.
+ *
+ * `src`: elemento della priority queue da cui parte il rilassamento;
+ * `dst`: elemento della priority queue in cui arriva l'arco uscente da `src`;
+ * `link`: arco che collega il corrispettivo `src` a `dst` nel grafo originale.
+ */
+double relax(HeapElem *src, HeapElem *dst, Edge *link)
 {
     double new_weight = 0;
 
-    if (dst->prio > src->prio + link->weight) 
+    if (dst->prio > src->prio + link->weight)
     {
         new_weight = src->prio + link->weight;
         dst->prio = new_weight;
@@ -553,7 +650,15 @@ double relax(HeapElem *src, HeapElem *dst, Edge *link)
     return new_weight;
 }
 
-void dijkstra(Graph *graph, long c_cell) 
+/*
+ * Algoritmo di Dijkstra: ricerca dei percorsi minimi
+ * in un grafo.
+ *
+ * `graph`: grafo su cui effettuare la ricerca;
+ * `c_cell`: parametro per inizializzare il costo della sorgente all'interno della
+ * priority queue.
+ */
+void dijkstra(Graph *graph, double c_cell)
 {
     MinHeap *queue = minheap_create(graph->nr_nodes);
     HeapElem extracted, heap_adj;
@@ -563,78 +668,107 @@ void dijkstra(Graph *graph, long c_cell)
     double new_prio;
     int j;
 
+    /* preparo una coda di priorità */
     fill_queue(queue, graph, c_cell);
 
-    while ( !minheap_is_empty(queue) ) 
+    while (!minheap_is_empty(queue)) /* Continuo finché sono presenti degli elementi nella coda di priorità */
     {
+        /* Estraggo un elemento dalla coda */
         extracted = minheap_delete_min2(queue);
-        
+
+        /* Individuo il corrispondente nodo del grafo */
         src_node = find_node_by_id(graph, extracted.key);
+
+        /* e di conseguenza i suoi archi uscenti */
         adj = src_node->links;
 
-        for (idx_direction = UP; idx_direction < 4; idx_direction++) 
+        /* Ciclo tutti i possibili archi del nodo */
+        for (idx_direction = UP; idx_direction < 4; idx_direction++)
         {
-            if (adj[idx_direction] == NULL) continue;
+            /* Se il nodo in corrispondenza di `idx_direction` non esiste, passo all'iterazione successiva. */
+            if (adj[idx_direction] == NULL)
+                continue;
 
+            /* altrimenti individuo nell'heap l'elemento in corrispondenza
+            alla destinazione dell'arco `adj[idx_direction]` */
             j = queue->pos[adj[idx_direction]->dst];
             heap_adj = queue->heap[j];
-            
+
+            /* quindi 'rilasso' l'arco */
             new_prio = relax(
-                &extracted, 
+                &extracted,
                 &heap_adj,
                 adj[idx_direction]);
 
-            if (new_prio) 
+            if (new_prio)
             {
+                /* se il rilassamento ha avuto effetto (quindi il peso precedentemente memorizzato non era il più basso),
+                modifico la priorità dell'elemento corrispondente alla destinazione dell'arco con il nuovo peso */
                 minheap_change_prio(queue, adj[idx_direction]->dst, new_prio);
+
+                /* cerco nel grafo il nodo corrispondente alla destinazione dell'arco */
                 dst_node = find_node_by_id(graph, adj[idx_direction]->dst);
 
+                /* su questo nodo memorizzo il padre (utile per ricostruire il percorso minimo da sorgente a nodo) */
                 dst_node->parent = src_node;
+
+                /* e salvo anche il costo del cammino fin'ora trovato da sorgente a `dst_node` */
                 dst_node->cost_from_src = new_prio;
             }
         }
     }
+
+    /* libero la memoria precedentemente allocata */
+    minheap_destroy(queue);
 }
 
-void print_shortest_path(Graph *graph, int src_id, int dst_id) 
+/*
+ * Funzione di stampa del percorso minimo - da sorgente a destinazione.
+ *
+ * `graph`: grafo su cui leggere il percorso minimo;
+ * `src_id`: id del nodo sorgente del cammino;
+ * `dst_id`: id del nodo destinazione del cammino.
+ */
+void print_shortest_path(Graph *graph, int src_id, int dst_id)
 {
     Node *src_node = find_node_by_id(graph, src_id);
     Node *dst_node = find_node_by_id(graph, dst_id);
     Node *current_node;
 
     Node *reversed_list = NULL;
-    
-    for (current_node = dst_node; current_node->id != src_node->id; current_node = current_node->parent) {
+
+    for (current_node = dst_node; current_node->id != src_node->id; current_node = current_node->parent)
+    {
         insert_node(&reversed_list, current_node);
     }
 
     insert_node(&reversed_list, src_node);
 
-    for (current_node = reversed_list; current_node != NULL; current_node = current_node->next) 
+    for (current_node = reversed_list; current_node != NULL; current_node = current_node->next)
     {
         printf("%d %d\n", current_node->coords.col, current_node->coords.row);
-    } 
+    }
     printf("-1 -1\n");
     printf("%.0f", dst_node->cost_from_src);
 }
 
-int main(int argc, char *argvs[]) 
+int main(int argc, char *argvs[])
 {
     FILE *input_file;
     int n, m; /* 'n' righe, 'm' colonne della matrice input */
-    long c_cell, c_height;
+    double c_cell, c_height;
     long **H; /* Matrice di input */
     Coordinates dst_coords;
     Graph *map;
-    
+
     assert(argc > 1);
-    
+
     input_file = fopen(argvs[1], "r");
     assert(input_file != NULL);
 
     /* Lettura dati input */
-    fscanf(input_file, "%ld", &c_cell);
-    fscanf(input_file, "%ld", &c_height);
+    fscanf(input_file, "%lf", &c_cell);
+    fscanf(input_file, "%lf", &c_height);
     fscanf(input_file, "%d", &n);
     fscanf(input_file, "%d", &m);
 
@@ -642,12 +776,14 @@ int main(int argc, char *argvs[])
     dst_coords.col = m - 1;
 
     H = read_matrix_from_file(input_file, n, m);
-
     map = build_graph(H, n, m, c_cell, c_height);
 
     dijkstra(map, c_cell);
     print_shortest_path(map, 0, get_unique_id(dst_coords, m));
 
+    destroy_graph(map);
+    destroy_matrix(H, n);
     fclose(input_file);
+
     return EXIT_SUCCESS;
 }
