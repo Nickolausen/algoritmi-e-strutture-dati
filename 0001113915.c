@@ -14,8 +14,8 @@ typedef struct Coordinates
 
 typedef struct Edge
 {
-    long src;
-    long dst;
+    int src;
+    int dst;
     double weight;
     struct Edge *next;
 } Edge;
@@ -43,6 +43,7 @@ typedef struct HeapElem
 {
     int key;
     double prio;
+    Node *graph_node;
 } HeapElem;
 
 typedef struct
@@ -295,7 +296,7 @@ HeapElem minheap_min2(const MinHeap *h)
 }
 
 /* Inserisce una nuova coppia (key, prio) nello heap. */
-void minheap_insert(MinHeap *h, int key, double prio)
+void minheap_insert(MinHeap *h, int key, double prio, Node *node)
 {
     int i;
 
@@ -307,6 +308,7 @@ void minheap_insert(MinHeap *h, int key, double prio)
     h->pos[key] = i;
     h->heap[i].key = key;
     h->heap[i].prio = prio;
+    h->heap[i].graph_node = node;
     move_up(h, i);
 }
 
@@ -620,13 +622,14 @@ void destroy_graph(Graph *graph)
 void fill_queue(MinHeap *queue, Graph *graph, double c_cell)
 {
     Node *current_node;
+    double prio;
 
     for (current_node = graph->nodes; current_node != NULL; current_node = current_node->next)
     {
-        if (current_node->id == 0) /* se ci troviamo sulla sorgente, il costo sarà c_cell */
-            minheap_insert(queue, current_node->id, c_cell);
-        else
-            minheap_insert(queue, current_node->id, FLT_MAX);
+        /* se ci troviamo sulla sorgente, il costo sarà c_cell - altrimenti `infty` */
+        prio = (current_node->id == 0) ? c_cell : FLT_MAX;
+
+        minheap_insert(queue, current_node->id, prio, current_node);
     }
 }
 
@@ -660,13 +663,16 @@ double relax(HeapElem *src, HeapElem *dst, Edge *link)
  */
 void dijkstra(Graph *graph, double c_cell)
 {
-    MinHeap *queue = minheap_create(graph->nr_nodes);
+    MinHeap *queue, *extracted_queue;
     HeapElem extracted, heap_adj;
     Node *src_node, *dst_node;
     Edge **adj;
     Direction idx_direction;
     double new_prio;
     int j;
+
+    queue = minheap_create(graph->nr_nodes);
+    extracted_queue = minheap_create(graph->nr_nodes);
 
     /* preparo una coda di priorità */
     fill_queue(queue, graph, c_cell);
@@ -675,9 +681,10 @@ void dijkstra(Graph *graph, double c_cell)
     {
         /* Estraggo un elemento dalla coda */
         extracted = minheap_delete_min2(queue);
+        minheap_insert(extracted_queue, extracted.key, extracted.prio, extracted.graph_node);
 
         /* Individuo il corrispondente nodo del grafo */
-        src_node = find_node_by_id(graph, extracted.key);
+        src_node = extracted.graph_node;
 
         /* e di conseguenza i suoi archi uscenti */
         adj = src_node->links;
@@ -692,6 +699,10 @@ void dijkstra(Graph *graph, double c_cell)
             /* altrimenti individuo nell'heap l'elemento in corrispondenza
             alla destinazione dell'arco `adj[idx_direction]` */
             j = queue->pos[adj[idx_direction]->dst];
+            if (j == -1) {
+                j = extracted_queue->pos[adj[idx_direction]->dst];
+            }
+
             heap_adj = queue->heap[j];
 
             /* quindi 'rilasso' l'arco */
@@ -707,7 +718,7 @@ void dijkstra(Graph *graph, double c_cell)
                 minheap_change_prio(queue, adj[idx_direction]->dst, new_prio);
 
                 /* cerco nel grafo il nodo corrispondente alla destinazione dell'arco */
-                dst_node = find_node_by_id(graph, adj[idx_direction]->dst);
+                dst_node = heap_adj.graph_node;
 
                 /* su questo nodo memorizzo il padre (utile per ricostruire il percorso minimo da sorgente a nodo) */
                 dst_node->parent = src_node;
@@ -725,31 +736,16 @@ void dijkstra(Graph *graph, double c_cell)
 /*
  * Funzione di stampa del percorso minimo - da sorgente a destinazione.
  *
- * `graph`: grafo su cui leggere il percorso minimo;
- * `src_id`: id del nodo sorgente del cammino;
- * `dst_id`: id del nodo destinazione del cammino.
+ * `dst`: nodo di destinazione del percorso minimo;
  */
-void print_shortest_path(Graph *graph, int src_id, int dst_id)
+void print_shortest_path_from_src(Node *dst)
 {
-    Node *src_node = find_node_by_id(graph, src_id);
-    Node *dst_node = find_node_by_id(graph, dst_id);
-    Node *current_node;
-
-    Node *reversed_list = NULL;
-
-    for (current_node = dst_node; current_node->id != src_node->id; current_node = current_node->parent)
+    if (dst->id != 0)
     {
-        insert_node(&reversed_list, current_node);
+        print_shortest_path_from_src(dst->parent);
     }
 
-    insert_node(&reversed_list, src_node);
-
-    for (current_node = reversed_list; current_node != NULL; current_node = current_node->next)
-    {
-        printf("%d %d\n", current_node->coords.col, current_node->coords.row);
-    }
-    printf("-1 -1\n");
-    printf("%.0f", dst_node->cost_from_src);
+    printf("%d %d\n", dst->coords.row, dst->coords.col);
 }
 
 int main(int argc, char *argvs[])
@@ -758,6 +754,7 @@ int main(int argc, char *argvs[])
     int n, m; /* 'n' righe, 'm' colonne della matrice input */
     double c_cell, c_height;
     long **H; /* Matrice di input */
+    Node *dst_node;
     Coordinates dst_coords;
     Graph *map;
 
@@ -777,9 +774,12 @@ int main(int argc, char *argvs[])
 
     H = read_matrix_from_file(input_file, n, m);
     map = build_graph(H, n, m, c_cell, c_height);
+    dst_node = find_node_by_id(map, get_unique_id(dst_coords, m));
 
     dijkstra(map, c_cell);
-    print_shortest_path(map, 0, get_unique_id(dst_coords, m));
+    print_shortest_path_from_src(dst_node);
+    printf("-1 -1\n");
+    printf("%.0f", dst_node->cost_from_src);
 
     destroy_graph(map);
     destroy_matrix(H, n);
