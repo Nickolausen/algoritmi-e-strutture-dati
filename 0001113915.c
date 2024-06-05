@@ -663,7 +663,7 @@ double relax(HeapElem *src, HeapElem *dst, Edge *link)
  */
 void dijkstra(Graph *graph, double c_cell)
 {
-    MinHeap *queue, *extracted_queue;
+    MinHeap *queue;
     HeapElem extracted, heap_adj;
     Node *src_node, *dst_node;
     Edge **adj;
@@ -672,16 +672,14 @@ void dijkstra(Graph *graph, double c_cell)
     int j;
 
     queue = minheap_create(graph->nr_nodes);
-    extracted_queue = minheap_create(graph->nr_nodes);
 
     /* preparo una coda di priorità */
     fill_queue(queue, graph, c_cell);
-
-    while (!minheap_is_empty(queue)) /* Continuo finché sono presenti degli elementi nella coda di priorità */
+    
+    while ( !minheap_is_empty(queue) ) /* Continuo finché sono presenti degli elementi nella coda di priorità */
     {
         /* Estraggo un elemento dalla coda */
         extracted = minheap_delete_min2(queue);
-        minheap_insert(extracted_queue, extracted.key, extracted.prio, extracted.graph_node);
 
         /* Individuo il corrispondente nodo del grafo */
         src_node = extracted.graph_node;
@@ -697,11 +695,9 @@ void dijkstra(Graph *graph, double c_cell)
                 continue;
 
             /* altrimenti individuo nell'heap l'elemento in corrispondenza
-            alla destinazione dell'arco `adj[idx_direction]` */
+            alla destinazione dell'arco `adj[idx_direction]` - assicurandomi che l'elemento adiacente non sia già stato estratto dalla coda */
             j = queue->pos[adj[idx_direction]->dst];
-            if (j == -1) {
-                j = extracted_queue->pos[adj[idx_direction]->dst];
-            }
+            if (j == -1) continue;
 
             heap_adj = queue->heap[j];
 
