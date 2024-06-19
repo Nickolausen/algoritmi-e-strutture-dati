@@ -556,16 +556,17 @@ Graph *build_graph(long **values, int rows, int cols, double c_cell, double c_he
 
                 if (!is_within_boundaries(&next_position, rows, cols))
                 {
-                    insert_edge(new_node, NULL, current_direction);
-                    continue;
+                    new_edge = NULL;
                 }
+                else 
+                {
+                    new_edge = (Edge *)malloc(sizeof(Edge));
+                    assert(new_edge != NULL);
 
-                new_edge = (Edge *)malloc(sizeof(Edge));
-                assert(new_edge != NULL);
-
-                new_edge->src = get_unique_id(position, cols);
-                new_edge->dst = get_unique_id(next_position, cols);
-                new_edge->weight = get_cost(c_cell, c_height, values[position.row][position.col], values[next_position.row][next_position.col]);
+                    new_edge->src = get_unique_id(position, cols);
+                    new_edge->dst = get_unique_id(next_position, cols);
+                    new_edge->weight = get_cost(c_cell, c_height, values[position.row][position.col], values[next_position.row][next_position.col]);
+                }
 
                 insert_edge(new_node, new_edge, current_direction);
             }
